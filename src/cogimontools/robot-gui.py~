@@ -150,7 +150,8 @@ class MainWindow(Gtk.Window):
         #     )
         #)
 
-win = MainWindow()
-win.connect("delete-event", Gtk.main_quit)
-win.show_all()
+def main():
+	win = MainWindow()
+	win.connect("delete-event", Gtk.main_quit)
+	win.show_all()
 Gtk.main()
