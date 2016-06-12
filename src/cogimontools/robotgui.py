@@ -12,7 +12,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 class JointInfo():
-    def __init__(self, name, initial, max_pos, min_pos):
+    def __init__(self, name, initial, min_pos, max_pos):
         self.name = name
         self.initial = initial
         self.max = max_pos
@@ -23,16 +23,37 @@ class MainWindow(Gtk.Window):
     # any signal from the scales is signaled to the label the text of which is
     # changed
     def scale_moved(self, event, scale, name):
-        print("Horizontal scale is " + name + " " + str(int(scale.get_value())));
-        if name == 'WaistLat':
+        print("Horizontal scale is " + name + " " + str(float(scale.get_value())));
+        # if name == 'WaistLat':
+        #     print "Setting " + name
+        #     self.commanded[0] = scale.get_value()
+        # elif name == 'WaistSag':
+        #     print "Setting " + name
+        #     self.commanded[1] = scale.get_value()
+        # elif name == 'WaistYaw':
+        #     print "Setting " + name
+        #     self.commanded[2] = scale.get_value()
+        if name == 'LShSag':
             print "Setting " + name
             self.commanded[0] = scale.get_value()
-        elif name == 'WaistSag':
+        elif name == 'LShLat':
             print "Setting " + name
             self.commanded[1] = scale.get_value()
-        elif name == 'WaistYaw':
+        elif name == 'LShYaw':
             print "Setting " + name
             self.commanded[2] = scale.get_value()
+        elif name == 'LElbj':
+            print "Setting " + name
+            self.commanded[3] = scale.get_value()
+        elif name == 'LForearmPlate':
+            print "Setting " + name
+            self.commanded[4] = scale.get_value()
+        elif name == 'LWrj1':
+            print "Setting " + name
+            self.commanded[5] = scale.get_value()
+        elif name == 'LWrj2':
+            print "Setting " + name
+            self.commanded[6] = scale.get_value()
 
 
 
@@ -42,23 +63,18 @@ class MainWindow(Gtk.Window):
         message = JointAngles()
         message.angles.extend(self.commanded)
 
-        informer = rsb.createInformer("/my/input", dataType=JointAngles)
-
-        informer.publishData(message)
+        self.informer.publishData(message)
 
         print "Message sent: " + str(message)
-
-        # deactivate informer to free resources
-        informer.deactivate()
-
-
-
 
     def __init__(self):
         Gtk.Window.__init__(self, title="Robot GUI Quick Hack")
         self.set_border_width(3)
+
+        self.informer = rsb.createInformer("/coman/left_arm/JointPositionCtrl", dataType=JointAngles)
+
         # TODO get home / safe posture
-        self.commanded = [0] * 29;
+        self.commanded = [0] * 7;
 
         pane = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         pane.set_border_width(10)
@@ -75,19 +91,19 @@ class MainWindow(Gtk.Window):
         robot = {}
 
         robot['Torso'] = {}
-        robot['Torso']['WaistLat'] = JointInfo(0, 0, 250, 0)
-        robot['Torso']['WaistSag'] = JointInfo(0, 0, 250, 0)
-        robot['Torso']['WaistYaw'] = JointInfo(0, 0, 250, 0)
+        robot['Torso']['WaistLat'] = JointInfo(0, 0, -1.57, 1.57)
+        robot['Torso']['WaistSag'] = JointInfo(0, 0, -1.57, 1.57)
+        robot['Torso']['WaistYaw'] = JointInfo(0, 0, -1.57, 1.57)
 
         # LArm
         robot['Left Arm'] = {}
-        robot['Left Arm']['LShSag'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LShSag'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LShYaw'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LElbj'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LForearmPlate'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LWrj1'] = JointInfo(0, 0, 250, 0)
-        robot['Left Arm']['LWrj2'] = JointInfo(0, 0, 250, 0)
+        robot['Left Arm']['LShSag'] = JointInfo(0, 0, -3.40, 1.65)
+        robot['Left Arm']['LShLat'] = JointInfo(0, 0, -0.3, 2)
+        robot['Left Arm']['LShYaw'] = JointInfo(0, 0, -1.57, 1.57)
+        robot['Left Arm']['LElbj'] = JointInfo(0, 0, -2.3, 0)
+        robot['Left Arm']['LForearmPlate'] = JointInfo(0, 0, -1.57, 1.57)
+        robot['Left Arm']['LWrj1'] = JointInfo(0, 0, -0.5, 0.5)
+        robot['Left Arm']['LWrj2'] = JointInfo(0, 0, -0.78, 1.39)
 
         for chain, joints in robot.iteritems():
             page = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -102,7 +118,7 @@ class MainWindow(Gtk.Window):
                 # step increment - press cursor keys to see!,
                 # page increment - click around the handle to see!,
                 # page size - not used here)
-                ad1 = Gtk.Adjustment(info.initial, info.min, info.max, 5, 10, 0)
+                ad1 = Gtk.Adjustment(info.initial, info.min, info.max, 0.1, 1, 0)
 
                 # an horizontal scale
                 h_scale = Gtk.Scale(
@@ -150,8 +166,16 @@ class MainWindow(Gtk.Window):
         #     )
         #)
 
+    def getinformer(self):
+        return self.informer
+
+
 def main():
-	win = MainWindow()
-	win.connect("delete-event", Gtk.main_quit)
-	win.show_all()
-	Gtk.main()
+    win = MainWindow()
+    win.connect("delete-event", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
+    win.getinformer().deactivate()
+
+if __name__ == '__main__':
+    main()
